@@ -6,9 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # github.repository is already "owner/repo"; we append /backend so the
-  # image tag stays stable even if you add other services later.
-  IMAGE_NAME: ${{ github.repository }}/backend
+  IMAGE_NAME: hiwa-hide/ec2
 
 jobs:
   build-and-push:
@@ -30,7 +28,7 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
+          context: .
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
@@ -47,7 +45,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ~/bakeshop-app
+            cd ~/EC2
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose pull backend
             docker compose up -d

@@ -2,18 +2,20 @@ name: Build and Deploy
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: hiwa-hide/ec2
+  IMAGE_NAME: HIWA-HIDE/EC2
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       packages: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -37,6 +39,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+
     steps:
       - name: Deploy to EC2 over SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -50,3 +53,4 @@ jobs:
             docker compose pull backend
             docker compose up -d
             docker image prune -f
+

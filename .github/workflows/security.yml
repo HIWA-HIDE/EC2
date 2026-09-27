@@ -18,7 +18,7 @@ jobs:
       # Scan dependencies (package.json/lock), Dockerfile misconfig, and
       # any accidentally committed secrets.
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: "fs"
           scan-ref: "."
@@ -31,7 +31,7 @@ jobs:
         run: docker build -t scan-target:latest .
 
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: "scan-target:latest"
           severity: "HIGH,CRITICAL"
@@ -59,13 +59,31 @@ jobs:
             sleep 2
           done
 
-      - name: OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.12.0
+      - name: Prepare report files
+        run: |
+          touch report_json.json report_md.md report_html.html
+          chmod a+w report_json.json report_md.md report_html.html
+
+      # Run ZAP directly instead of via zaproxy/action-baseline - that
+      # action's own artifact-upload step is currently broken against
+      # GitHub's current backend. This is the same scan, run manually.
+      - name: Run OWASP ZAP baseline scan
+        continue-on-error: true
+        run: |
+          docker run --rm -v "$PWD":/zap/wrk/:rw --network=host \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://localhost:3000 \
+            -J report_json.json -w report_md.md -r report_html.html
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          target: "http://localhost:3000"
-          fail_action: false
-          artifact_name: "zap-report"
-          allow_issue_writing: false
+          name: zap-report
+          path: |
+            report_html.html
+            report_json.json
+            report_md.md
 
       - name: Tear down
         if: always()

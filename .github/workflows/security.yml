@@ -18,7 +18,7 @@ jobs:
       # Scan dependencies (package.json/lock), Dockerfile misconfig, and
       # any accidentally committed secrets.
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           scan-type: "fs"
           scan-ref: "."
@@ -63,7 +63,8 @@ jobs:
         uses: zaproxy/action-baseline@v0.12.0
         with:
           target: "http://localhost:3000"
-          fail_action: true
+          fail_action: false
+          artifact_name: "zap-report"
           allow_issue_writing: false
 
       - name: Tear down

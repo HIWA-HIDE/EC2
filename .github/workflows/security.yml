@@ -1,0 +1,71 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Scan dependencies (package.json/lock), Dockerfile misconfig, and
+      # any accidentally committed secrets.
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
+          format: "table"
+
+      # Build the image locally just to scan it - never pushed anywhere.
+      - name: Build image for scanning
+        run: docker build -t scan-target:latest .
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "scan-target:latest"
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
+          format: "table"
+
+  zap-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Spin up a throwaway copy of the app (built from source, with
+      # dummy DB credentials) so ZAP has a live target to attack. This
+      # never touches your real EC2 deployment or real secrets.
+      - name: Start the app for scanning
+        run: |
+          docker compose -f docker-compose.ci.yml up -d --build
+          echo "Waiting for the app to become healthy..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health > /dev/null; then
+              echo "App is up."
+              break
+            fi
+            sleep 2
+          done
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: "http://localhost:3000"
+          fail_action: true
+          allow_issue_writing: false
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.ci.yml down -v

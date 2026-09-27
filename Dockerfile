@@ -11,6 +11,18 @@ RUN npm ci --omit=dev
 # ---- Copy the rest of the source ----
 COPY . .
 
+# ---- Security hardening ----
+# 1. Patch Alpine OS packages (e.g. libssl/libcrypto CVEs) to their latest
+#    fixed versions, even though the base image tag itself hasn't changed.
+# 2. Remove npm's own bundled tooling from the final image. It's only
+#    needed during `npm ci` above - the app itself only ever runs via
+#    `node`, never `npm`, so this also removes npm's own vulnerable
+#    transitive dependencies (tar, glob, minimatch, etc.) that Trivy
+#    flags but that are never actually executed in production.
+RUN apk update && apk upgrade --no-cache \
+    && rm -rf /usr/local/lib/node_modules/npm \
+    && rm -rf /tmp/* /var/cache/apk/*
+
 # ---- Runtime ----
 ENV NODE_ENV=production
 EXPOSE 3000

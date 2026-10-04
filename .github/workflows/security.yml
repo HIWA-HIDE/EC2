@@ -88,3 +88,19 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f docker-compose.ci.yml down -v
+  tfsec:
+    name: Terraform scan (tfsec)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Scans the Terraform source (not state) for misconfigurations:
+      # open security groups, unencrypted volumes, missing IMDSv2, etc.
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        continue-on-error: true  # warn first; flip to false once findings are clean
+        with:
+          working_directory: terraform-codes

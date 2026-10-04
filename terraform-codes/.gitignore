@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------
+# terraform-codes/.gitignore
+# ---------------------------------------------------------------------------
+
+# Local .terraform directories (provider plugins/cache — huge, platform-specific)
+**/.terraform/*
+
+# .tfstate files — may contain sensitive data in plain text
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Variable files — may contain secrets (IPs, keys, tokens)
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# CLI config files
+.terraformrc
+terraform.rc
+
+# Lock info files left behind by a crashed/interrupted apply
+.terraform.tfstate.lock.info
+
+# Downloaded scanner binaries — don't commit tools, only source
+tfsec.exe
+tfsec
